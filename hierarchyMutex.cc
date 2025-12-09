@@ -54,6 +54,9 @@ class hierarchicalMutex{
 
         bool tryLock(){
             checkForHierarchyValue();
+            //try lock atomizes the operation of locking. It checks for lockness and if it isn't also locks the mutex. 
+            //instead of giving two functions (is_locked and lock), this atomizes it into one. This is to avoid data
+            //races in client code
             if(!_internalMutex.try_lock()){
                 return false;
             }
