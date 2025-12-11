@@ -59,6 +59,7 @@ class threadsafeQueue{
             queue_.pop();
             std::cout << "popped with try" << std::endl;
             return ptr;
+            std::promise<int> s;
         }
 
         void wait_and_pop(T& value){
