@@ -54,4 +54,19 @@ class myfuture{
             
             throw std::future_error(std::future_errc::broken_promise);
         }
+
+        void wait(){
+            
+            auto ptr = s_.lock();
+
+            if(!ptr){
+                throw std::future_error(std::future_errc::no_state);
+            }
+
+            std::unique_lock<std::mutex> lk{ptr->m_};
+
+            while(!ptr->ready_){
+                ptr->cond_.wait(lk);
+            }
+        }
 };
