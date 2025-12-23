@@ -266,3 +266,182 @@ fetch_or, |=                                                                    
 fetch_and, &=                                                                        Y
 fetch_xor, ^=                                                                        Y
 ++, --                                                            Y                  Y
+
+
+Keywords: happens-before, inter-thread, transitive relations, strongly-happens-before y meory order consume, syncronizes-with, sequence-before
+
+sequence-before has to do with single threads. If thread A executes the instruction A and then the instruction B (sequentially), then A sequences-before B. At multithread level,
+if thread A executes instruction 1, then thread 2 executes instruction 2 and both instructions are suitaby tagged (for example, aquire, release).
+
+![photo](image.png)
+
+Modelo de memoria en C++ — Resumen conceptual
+1. Memoria compartida ≠ observación compartida
+
+Que una variable esté en memoria compartida no implica que todos los threads vean el mismo valor al mismo tiempo ni en el mismo orden.
+Cada thread observa una proyección local del estado del programa, influida por:
+
+reordenamientos del compilador
+
+buffers de escritura
+
+cachés privadas
+
+ejecución fuera de orden del hardware
+
+El modelo de memoria de C++ define qué observaciones son legales, no cómo se implementan.
+
+2. Qué garantiza std::atomic
+
+Un std::atomic<T> garantiza:
+
+atomicidad (no valores rotos)
+
+ausencia de data races
+
+un modification order total por cada objeto atómico
+
+Pero NO garantiza por sí solo:
+
+visibilidad inmediata entre threads
+
+orden relativo con otros atomics
+
+una historia global compartida
+
+La sincronización debe pedirse explícitamente.
+
+3. Relaciones fundamentales del modelo
+3.1 sequence-before
+
+Orden dentro de un mismo thread
+
+Total y siempre existente
+
+No cruza threads
+
+3.2 synchronizes-with
+
+Relación explícita entre threads
+
+Ocurre cuando:
+
+un store(release) es leído por un load(acquire)
+
+o con mutexes, fences, seq_cst
+
+Siempre induce happens-before
+
+3.3 happens-before
+
+Relación lógica final
+
+Garantiza:
+
+visibilidad
+
+ausencia de data races
+
+Es transitiva
+
+Se construye a partir de:
+
+sequence-before
+
+synchronizes-with
+
+4. Acquire / Release: qué hacen y qué no hacen
+Qué SÍ hacen
+
+Permiten publicar estado (release)
+
+Permiten consumir estado (acquire)
+
+Crean relaciones puntuales y dirigidas
+
+Son transitivos
+
+Qué NO hacen
+
+No crean orden global
+
+No obligan a que todos los threads vean lo mismo
+
+No sincronizan atomics distintos
+
+No imponen una historia única
+
+Acquire/release sincroniza pares, no el sistema entero.
+
+5. seq_cst: orden total global
+
+memory_order_seq_cst añade una garantía extra:
+
+Todas las operaciones seq_cst participan en un único orden global total
+
+Todos los threads observan la misma historia
+
+Es más fácil de razonar, pero más restrictivo (y potencialmente más caro).
+
+6. Modification order
+
+Para cada objeto atómico individual existe un modification order:
+
+Es un orden total de todas sus escrituras
+
+Si dos escrituras están sequence-before en el mismo thread, ese orden es obligatorio
+
+Si vienen de threads distintos, el orden puede variar entre ejecuciones
+
+Un load(acquire):
+
+lee una escritura permitida del modification order
+
+sincroniza solo con la escritura cuyo valor lee
+
+no elige “la más nueva” salvo que esté obligado por orden previo o seq_cst
+
+7. Múltiples releases y acquires
+
+Un release puede ser consumido por múltiples acquire
+
+Un acquire sincroniza con un solo release (el que lee)
+
+Si los releases vienen del mismo thread, el más nuevo gana
+
+Si vienen de threads distintos, el acquire puede ver cualquiera
+
+8. Por qué los threads pueden “disagree”
+
+Incluso con atomics:
+
+no hay orden global implícito
+
+distintos threads pueden observar escrituras en órdenes distintos
+
+la coherencia no impone orden entre variables distintas
+
+El desacuerdo no es un bug, es un comportamiento permitido.
+
+9. volatile NO es sincronización
+
+En C++:
+
+volatile solo impide optimizaciones del compilador
+
+no crea happens-before
+
+no fuerza propagación entre cores
+
+no impone orden inter-thread
+
+Leer varias veces una variable volatile no garantiza ver un write reciente de otro thread.
+
+10. Idea clave final
+
+El orden no es una propiedad del programa, sino de la observación de cada thread.
+La sincronización explícita es lo único que crea acuerdo entre threads.
+
+Acquire/release crea acuerdos locales.
+seq_cst crea acuerdo global.
+Sin sincronización, no se puede asumir nada.
