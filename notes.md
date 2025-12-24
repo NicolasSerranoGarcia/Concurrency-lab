@@ -445,3 +445,7 @@ La sincronización explícita es lo único que crea acuerdo entre threads.
 Acquire/release crea acuerdos locales.
 seq_cst crea acuerdo global.
 Sin sincronización, no se puede asumir nada.
+
+Designing concurrent lock-based ds:
+When designing data structures for concurrency (ds that support concurrent use, and present thread-safe operations), the key takeway is to create it in order to enable multiple threads to operate on it, and take a real value from doing so. If you design a ds with locks, thought for multiple concurrent access, but for every operation you need exclusive access to the ds, then you are essentially serializing the access, loosing the multithreading capabilities. 
+This will depend on the ds, because some admit more room for concurrency than others. 
